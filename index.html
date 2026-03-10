@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🦞 出栏考试 - Agent 能力评估</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      min-height: 100vh;
+      color: #fff;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    .logo {
+      font-size: 64px;
+      margin-bottom: 16px;
+    }
+    h1 {
+      font-size: 36px;
+      margin-bottom: 8px;
+      background: linear-gradient(90deg, #ff6b6b, #ffd93d);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .subtitle {
+      color: #8892b0;
+      font-size: 16px;
+    }
+    .card {
+      background: rgba(255,255,255,0.05);
+      border-radius: 16px;
+      padding: 32px;
+      margin-bottom: 24px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .question-type {
+      display: inline-block;
+      background: #ff6b6b;
+      color: #fff;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      margin-bottom: 16px;
+    }
+    .difficulty {
+      color: #ffd93d;
+      margin-left: 8px;
+    }
+    .question-title {
+      font-size: 24px;
+      margin-bottom: 16px;
+    }
+    .question-desc {
+      color: #ccd6f6;
+      line-height: 1.8;
+      margin-bottom: 24px;
+    }
+    .eval-points {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .eval-point {
+      background: rgba(255,107,107,0.2);
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-size: 12px;
+      color: #ff6b6b;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin-bottom: 8px;
+      color: #ccd6f6;
+      font-size: 14px;
+    }
+    textarea {
+      width: 100%;
+      background: rgba(0,0,0,0.3);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      padding: 16px;
+      color: #fff;
+      font-size: 14px;
+      resize: vertical;
+      min-height: 120px;
+    }
+    textarea:focus {
+      outline: none;
+      border-color: #ff6b6b;
+    }
+    .btn {
+      background: linear-gradient(90deg, #ff6b6b, #ff8e53);
+      border: none;
+      color: #fff;
+      padding: 16px 32px;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      width: 100%;
+      transition: transform 0.2s;
+    }
+    .btn:hover {
+      transform: translateY(-2px);
+    }
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .result {
+      text-align: center;
+    }
+    .score-circle {
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #ff6b6b, #ffd93d);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 24px;
+      font-size: 48px;
+      font-weight: bold;
+    }
+    .score-label {
+      font-size: 18px;
+      color: #ccd6f6;
+      margin-bottom: 24px;
+    }
+    .feedback {
+      background: rgba(255,107,107,0.1);
+      padding: 16px;
+      border-radius: 8px;
+      margin-bottom: 24px;
+      color: #ffd93d;
+    }
+    .suggestions {
+      text-align: left;
+    }
+    .suggestions h3 {
+      font-size: 16px;
+      margin-bottom: 12px;
+      color: #ccd6f6;
+    }
+    .suggestions li {
+      margin-bottom: 8px;
+      color: #8892b0;
+    }
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #8892b0;
+    }
+    .api-hint {
+      background: rgba(255,215,0,0.1);
+      border: 1px solid rgba(255,215,0,0.3);
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-size: 13px;
+      color: #ffd700;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo">🦞</div>
+      <h1>出栏考试</h1>
+      <p class="subtitle">评估你的 Agent 调教水平</p>
+    </header>
+
+    <!-- 开始考试 -->
+    <div id="start-section" class="card">
+      <h2 style="margin-bottom: 16px;">🐚 考试规则</h2>
+      <ul style="color: #ccd6f6; line-height: 2; margin-bottom: 24px;">
+        <li>随机抽取一道题目</li>
+        <li>让你的 Agent 完成题目</li>
+        <li>把 Agent 的回答提交上来</li>
+        <li>获得评分和针对性建议</li>
+      </ul>
+      <button class="btn" onclick="startExam()">🎯 开始考试</button>
+    </div>
+
+    <!-- 考试中 -->
+    <div id="exam-section" class="card" style="display: none;">
+      <span class="question-type" id="q-type"></span><span class="difficulty" id="q-difficulty"></span>
+      <h2 class="question-title" id="q-title"></h2>
+      <p class="question-desc" id="q-desc"></p>
+      <div class="eval-points" id="q-points"></div>
+      
+      <div style="margin-top: 32px;">
+        <div class="form-group">
+          <label>🤖 你给 Agent 的原始指令（Prompt）</label>
+          <textarea id="prompt-input" placeholder="把你给Agent的指令粘贴在这里..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>📝 Agent 的回答</label>
+          <textarea id="answer-input" placeholder="把Agent的回答粘贴在这里..."></textarea>
+        </div>
+        <button class="btn" onclick="submitAnswer()">📋 提交答案</button>
+      </div>
+    </div>
+
+    <!-- 加载中 -->
+    <div id="loading" class="card" style="display: none;">
+      <div class="loading">🐙 评分中...</div>
+    </div>
+
+    <!-- 结果 -->
+    <div id="result-section" class="card" style="display: none;">
+      <div class="result">
+        <div class="score-circle" id="score"></div>
+        <div class="score-label" id="score-label"></div>
+        <div class="feedback" id="feedback"></div>
+        <div class="suggestions">
+          <h3>💡 提升建议</h3>
+          <ul id="suggestions-list"></ul>
+        </div>
+        <button class="btn" onclick="location.reload()" style="margin-top: 24px;">🔄 再考一次</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentQuestion = null;
+
+    async function startExam() {
+      document.getElementById('start-section').style.display = 'none';
+      document.getElementById('loading').style.display = 'block';
+
+      try {
+        const res = await fetch('/api/exam');
+        const data = await res.json();
+        
+        if (data.success) {
+          currentQuestion = data.question;
+          showQuestion(currentQuestion);
+        } else {
+          alert('获取题目失败: ' + data.error);
+          location.reload();
+        }
+      } catch (e) {
+        alert('网络错误');
+        location.reload();
+      }
+    }
+
+    function showQuestion(q) {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('exam-section').style.display = 'block';
+      
+      document.getElementById('q-type').textContent = q.type;
+      document.getElementById('q-difficulty').textContent = q.difficulty;
+      document.getElementById('q-title').textContent = q.title;
+      document.getElementById('q-desc').textContent = q.description;
+      
+      const pointsEl = document.getElementById('q-points');
+      pointsEl.innerHTML = q.evalPoints.map(p => `<span class="eval-point">${p}</span>`).join('');
+    }
+
+    async function submitAnswer() {
+      const prompt = document.getElementById('prompt-input').value.trim();
+      const answer = document.getElementById('answer-input').value.trim();
+
+      if (!prompt || !answer) {
+        alert('请填写完整');
+        return;
+      }
+
+      document.getElementById('exam-section').style.display = 'none';
+      document.getElementById('loading').style.display = 'block';
+
+      try {
+        const res = await fetch('/api/exam', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            questionId: currentQuestion.id,
+            prompt,
+            answer
+          })
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+          showResult(data.result);
+        } else {
+          alert('提交失败: ' + data.error);
+          document.getElementById('exam-section').style.display = 'block';
+          document.getElementById('loading').style.display = 'none';
+        }
+      } catch (e) {
+        alert('网络错误');
+        document.getElementById('exam-section').style.display = 'block';
+        document.getElementById('loading').style.display = 'none';
+      }
+    }
+
+    function showResult(result) {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('result-section').style.display = 'block';
+      
+      document.getElementById('score').textContent = result.score;
+      
+      let label = '';
+      if (result.score >= 90) label = '🦞 超级龙虾大师！';
+      else if (result.score >= 75) label = '🦞 资深虾农';
+      else if (result.score >= 60) label = '🦞 实习饲养员';
+      else label = '🥚 蛋级选手';
+      document.getElementById('score-label').textContent = label;
+      
+      document.getElementById('feedback').textContent = result.feedback;
+      
+      const list = document.getElementById('suggestions-list');
+      list.innerHTML = result.suggestions.map(s => `<li>${s}</li>`).join('');
+    }
+  </script>
+</body>
+</html>
